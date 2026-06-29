@@ -57,3 +57,26 @@ Start the dashboard locally:
 ```powershell
 npm run dev
 ```
+
+## Docker Environment
+
+Copy environment defaults:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Validate the Compose configuration:
+
+```powershell
+docker compose config
+```
+
+Start the platform foundation:
+
+```powershell
+docker compose up --build
+```
+
+The API is exposed on `http://localhost:8000` and the dashboard on
+`http://localhost:3000`.

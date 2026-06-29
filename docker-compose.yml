@@ -1,0 +1,117 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    environment:
+      APP_NAME: ${APP_NAME:-AI Software Factory}
+      APP_VERSION: ${APP_VERSION:-0.1.0}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://platform:platform@postgres:5432/platform}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CODING_PROVIDER: ${CODING_PROVIDER:-codex}
+      WORKER_COUNT: ${WORKER_COUNT:-3}
+      MAX_RETRIES: ${MAX_RETRIES:-3}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    ports:
+      - "8000:8000"
+    networks:
+      - platform-network
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/dashboard/Dockerfile
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    networks:
+      - platform-network
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/worker/Dockerfile
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://platform:platform@postgres:5432/platform}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CODING_PROVIDER: ${CODING_PROVIDER:-codex}
+      WORKER_COUNT: ${WORKER_COUNT:-3}
+      MAX_RETRIES: ${MAX_RETRIES:-3}
+      SANDBOX_IMAGE: ${SANDBOX_IMAGE:-ai-software-factory-sandbox:latest}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - platform-network
+    restart: always
+
+  sandbox-runner:
+    build:
+      context: .
+      dockerfile: docker/sandbox-runner/Dockerfile
+    command: ["sleep", "infinity"]
+    networks:
+      - platform-network
+    volumes:
+      - sandbox-workspaces:/workspaces
+    restart: "no"
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: platform
+      POSTGRES_PASSWORD: platform
+      POSTGRES_DB: platform
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U platform -d platform"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - platform-network
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - platform-network
+    restart: always
+
+networks:
+  platform-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  sandbox-workspaces:
+
