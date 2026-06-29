@@ -36,3 +36,24 @@ The API health endpoint is available at:
 ```text
 GET /health
 ```
+
+## Dashboard Foundation
+
+Install dashboard dependencies:
+
+```powershell
+cd dashboard
+npm ci
+```
+
+Run dashboard checks:
+
+```powershell
+npm test
+```
+
+Start the dashboard locally:
+
+```powershell
+npm run dev
+```

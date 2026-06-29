@@ -10,4 +10,5 @@ node_modules/
 dist/
 build/
 coverage/
+tsconfig.tsbuildinfo
 .DS_Store
