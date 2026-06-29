@@ -80,3 +80,17 @@ docker compose up --build
 
 The API is exposed on `http://localhost:8000` and the dashboard on
 `http://localhost:3000`.
+
+## Database Foundation
+
+Run migrations inside Docker:
+
+```powershell
+docker compose run --rm api alembic upgrade head
+```
+
+Rollback the current migration:
+
+```powershell
+docker compose run --rm api alembic downgrade -1
+```
